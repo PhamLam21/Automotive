@@ -78,15 +78,18 @@ Cách ngắt thực hiện bên trong MCU:
 - MSP (main stack pointer): stack hoạt động dạng LIFO, trước khi nhảy tới địa chỉ hàm ngắt sẽ lưu lại địa chỉ trước đó vào MSC, cứ tiếp tục sau khi hoàn thành ngắt lấy phần tử đầu trong MSC để quay lại địa chỉ cũ để tiếp tục công việc
 - Nếu đang thực thi trình phục vụ ngắt mà có 1 ngắt có độ ưu tiên cao hơn xảy ra thì hệ thống sẽ thực hiện lại bước lưu địa chỉ xong nhảy đến địa chỉ hàm ngắt có độ ưu tiên cao hơn  
 
-Ba loại ngắt thường dung có thể lập trình được: ngắt ngoài, ngắt timer, ngắt truyền thông (UART, SPI, I2C).  
+Ba loại ngắt thường dung có thể lập trình được: ngắt ngoài, ngắt timer, ngắt truyền thông (UART, SPI, I2C)  
+  
 **Ngắt ngoài**  
 Xảy ra khi có thay đổi điện áp trên các chân GPIO được cấu hình làm ngõ vào ngắt. Có 4 loại ngắt ngoài:  
-- LOW: kích hoạt ngắt liên tục khi chân ở mức thấp.
-- HIGH: Kích hoạt liên tục khi chân ở mức cao.
-- RISING: Kích hoạt khi trạng thái trên chân chuyển từ thấp lên cao (cạnh lên).
-- FALLING: Kích hoạt khi trạng thái trên chân chuyển từ cao xuống thấp (cạnh xuống).  
+- LOW: kích hoạt ngắt liên tục khi chân ở mức thấp
+- HIGH: Kích hoạt liên tục khi chân ở mức cao
+- RISING: Kích hoạt khi trạng thái trên chân chuyển từ thấp lên cao (cạnh lên)
+- FALLING: Kích hoạt khi trạng thái trên chân chuyển từ cao xuống thấp (cạnh xuống)  
+
 **Ngắt timer**  
-Xảy ra khi giá trị trong thanh ghi đếm của timer bị tràn. Giá trị tràn được xác định bởi giá trị cụ thể trong thanh ghi đếm của timer. Đây là ngắt nội trong MCU, nên để có thể tạo được ngắt tiếp theo sau mỗi lần tràn thì phải reset lại giá trị thanh ghi.  
+Xảy ra khi giá trị trong thanh ghi đếm của timer bị tràn. Giá trị tràn được xác định bởi giá trị cụ thể trong thanh ghi đếm của timer. Đây là ngắt nội trong MCU, nên để có thể tạo được ngắt tiếp theo sau mỗi lần tràn thì phải reset lại giá trị thanh ghi  
+
 **Ngắt truyền thông**  
 Ngắt truyền thông xảy ra khi có sự kiện truyền/nhận dữ liệu giữa MCU với các thiết bị bên ngoài hay với MCU. Ngắt này sử dụng cho nhiều phương thức như SPI, I2C, UART,... nhằm đảm bảo việc truyền nhận chính xác.  
 Ngắt truyền thông giúp MCU không cần kiểm tra liên tục trạng thái nhận dữ liệu mà ẫn có thể phản ứng ngay khi dữ liệu đến. Do MCU không thể xử lý đa luồng như CPU, nên ngắt giúp tối ưu hiệu suất và đảm bảo dữ liệu được xử lý đúng thời điểm.  
