@@ -86,12 +86,12 @@ Xảy ra khi có thay đổi điện áp trên các chân GPIO được cấu h�
 - FALLING: Kích hoạt khi trạng thái trên chân chuyển từ cao xuống thấp (cạnh xuống).  
 **Ngắt timer**  
 Xảy ra khi giá trị trong thanh ghi đếm của timer bị tràn. Giá trị tràn được xác định bởi giá trị cụ thể trong thanh ghi đếm của timer. Đây là ngắt nội trong MCU, nên để có thể tạo được ngắt tiếp theo sau mỗi lần tràn thì phải reset lại giá trị thanh ghi.  
-**Ngắt truyền thông**   
+**Ngắt truyền thông**  
 Ngắt truyền thông xảy ra khi có sự kiện truyền/nhận dữ liệu giữa MCU với các thiết bị bên ngoài hay với MCU. Ngắt này sử dụng cho nhiều phương thức như SPI, I2C, UART,... nhằm đảm bảo việc truyền nhận chính xác.  
 Ngắt truyền thông giúp MCU không cần kiểm tra liên tục trạng thái nhận dữ liệu mà ẫn có thể phản ứng ngay khi dữ liệu đến. Do MCU không thể xử lý đa luồng như CPU, nên ngắt giúp tối ưu hiệu suất và đảm bảo dữ liệu được xử lý đúng thời điểm.  
 VD của ngắt truyền thông thường sử dụng:  
 - UART với ngắt nhận dữ liệu (RX interrupt)
-- SPI với ngắt truyền xong (TX complete interrupt)
+- SPI với ngắt truyền xong (TX complete interrupt)  
 ### TIMER  
 **Timer** là mạch digital có nhiệm vụ đếm xung clock (đếm lên hoặc đếm xuống) để thực hiện các tác vụ liên quan đến thời gian như sau:
 - Tạo độ trễ chính xác (delay)  
@@ -162,4 +162,62 @@ void delay_ms(uint16_t time) {
 	TIM_SetCounter(TIM2, 0);
 	while(TIM_GetCounter(TIM2) < time*10); //time max = 6553
 }
-```
+```  
+## Community Protocol  
+- Truyền nhận dữ lieu co bản là trao đổi tín hiệu điện áp giữa các chân với nhau -> dựa theo mức cao mức thấp -> Mức cao là bit 1, mức thấp bit 0  
+- Khi chuyền chuỗi tách chuỗi thành các ký tự -> truyền 1 lần 1 ký tự
+- Có 1 vấn đề khi truyền các từng bit là về 2 bit liền kề giống nhau thì bên nhận không phân biệt được bit mới hay cũ ->  cần các chuẩn giao tiếp giải quyết vấn đề bằng cách thống nhất thời gian truyền/nhận 1 bit dữ liệu
+- Các chuẩn giao tiếp:
+    - Nối tiếp: chuyển lần lượt các bit trên 1 đường dây
+    - Song song: 1 bit chuyền trên 1 đường dây, chuyền 8 bit cần 8 đường dây -> tốn tài nguyên phần cứng nhưng tốc độ truyền nhanh hơn
+- Các chế độ của một giao thức:
+    - Đơn công: Mỗi thiết bị truyền hoặc nhận trong mọi thời điểm
+    - Bán song công: Trong một thời điểm mỗi thiết bị chỉ được truyền hoặc nhận
+    - Song công: Trong mọi thời điểm thiết bị đều có thể truyền và nhận dữ liệu cùng lúc  
+### SPI  
+**SPI (Serial Peripheral Interface)** là chuẩn giao tiếp nối tiếp đồng bộ. SPI hoạt động ở dạng song công và có thể cho phép 1 Master kết nối với nhiều Slave. Bao gồm 4 dây:
+- SCK (Serial Clock): Tạo xung tín hiệu để đồng bộ truyền/nhận với các Slave, các Slave và Master sử dung chung 1 day SCK
+- MISO (Master Input Slave output) : Master nhận dữ lieu từ Slave
+- MOSI (Master Output Slave input) : Master truyền dữ lieu cho Slave
+- SS (CS, NSS): Dây để xác định Slave cụ thể để giao tiếp -> để chọn Slave giao tiếp Master kéo xuống 0V, có bao nhiêu Slave thì có bây nhiêu day SS để nối với các Slave riêng biệt  
+Nguyên lý hoạt động:
+- Master kéo chân SS của Slave tương ứng xuống 0 để bắt đầu quá trình giao tiếp
+- Master sẽ phát xung clock cứ mỗi chu kỳ clock sẽ là 1 bit Master truyền đi qua MOSI và nhận lại qua MISO
+- Sau khi nhận xong 1 bit thanh ghi nhận của Slave và Master sẽ cập nhật giá trị nhận vào và dịch bit để sẵn sàng nhận bit tiếp theo 
+- Lập lại quá trình đến khi truyền xong 8 bit trong thanh ghi  
+SPI có 4 chế độ hoạt động phụ thuộc Clock Polarity – CPOL và Phase - CPHA:
+- CPOL quyết định cực tính (hình dạng) của xung clock.
+    - CPOL = 0: khi không truyền/nhận, SCK sẽ ở mức 0. Khi muốn truyền/nhận thì Master sẽ kéo chân SCK lên mức 1 theo chu kỳ.
+    - CPOL = 1: khi không truyền/nhận, SCK sẽ ở mức 1. Khi muốn truyền/nhận thì Master sẽ kéo chân SCK lên mức 0 theo chu kỳ (ngược lại với CPOL = 0).
+- CPHA quyết định pha của xung clock, nơi mà bit sẽ được truyền đi trong một chu kỳ xung clock.
+    - CPHA = 0: bit được truyền/nhận ở cạnh đầu tiên trong chu kỳ xung clock, VD khi CPOL = 0 thì cạnh đầu tiên là cạnh lên, CPOL = 1 là cạnh xuống.
+    - CPHA = 1: bit được truyền/nhận ở cạnh thứ hai trong chu kỳ xung clock.
+### I2C  
+**I2C (Inter-Intergrated Circuit)** là chuẩn giao tiếp nối tiếp, đồng bộ. I2C hoạt động ở dạng bán song công và có thể cho phép 1 Master kết nối với nhiều Slave. Bao gồm 2 dây:
+- SPI (Serial Clock): Tạo xung tín hiệu để đồng bộ truyền/nhận dữ liệu với các Slave
+- SDA (Serial Data): Chân chứa dữ liệu được truyền đi  
+I2C hoạt động ở chế độ open-drain khi muốn điều khiển đường dây sẽ kéo xuống mức 0 đối với các trường hợp khác sẽ ở Floating (thả nổi) không có mức điện áp nào nên cần thiết kế 1 điện trở kéo lên để ở mức 1 nếu thiết bị không hỗ trợ.
+Nguyên lý hoạt động: 
+- Chuyền dữ liệu theo 1 khung (frame) cố định
+- Trước khi truyền dữ liệu để thông báo cho Slave -> kéo SDA xuống 0 rồi kéo SCL xuống 0 để thông báo
+- SCL = 1 bắt đầu truyền dữ liệu
+- Tiếp theo, Master sẽ gửi 7 bit địa chỉ (dữ liệu 8 bit). Các bit địa chỉ được dùng để chọn Slave mà Master muốn giao tiếp. Với 7 bit địa chỉ thì trong I2C có thể chứa tối đa 127 Slave khác nhau (địa chỉ 0x00 là của Master).
+- Sau khi gửi xong 7 bit địa chỉ thì Master tiếp tục gửi 1 bit R/W ngay sau bit địa chỉ cuối cùng. Bit này cho biết Master đang muốn gửi dữ liệu cho Slave (Write - 1) hay đọc dữ liệu từ Slave (Read - 0) có địa chỉ tương ứng.
+- Theo sau mỗi một khung dữ liệu 8 bit sẽ là một bit xác nhận ACK/NACK. Bit này được bên nhận gửi đi cho bên gửi, cho biết rằng bên nhận đã nhận thành công (ACK - 0) hoặc không (NACK - 1).
+- Khi Master gửi xong 8 bit trong khung dữ liệu, nó sẽ cho chạy timer 1 khoảng thời gian nhỏ, nếu không có Slave nào kéo chân SDA xuống mức 0 (chưa có ACK) khi timer chưa tràn thì Master sẽ hiểu là dữ liệu đã gửi không thành công (hoặc là không có Slave nào có địa chỉ tương ứng mà Master đã gửi).
+- Sau khi Master phát hiện ACK từ Slave, nó sẽ tiến hành truyền/nhận khung dữ liệu 8 bit đầu tiên (MSB gửi trước, LSB gửi sau) tuỳ vào bit R/W ở khung dữ liệu đầu tiên. Sau đó, bên nhận sẽ gửi bit ACK.
+- Sau khi đã phát hiện ACK thì sẽ tiếp tục truyền các khung dữ liệu cho tới khi hết dữ liệu.
+- Khi muốn kết thúc quá trình truyền/nhận dữ liệu nào đó, Master sẽ tạo Stop Condition bằng cách thả đường SCL trước thả đường SDA lên mức 1.
+### UART
+**UART (Universal Asynchronous Receiver-Transmitter)** là một giao thức truyền thông phần cứng dùng giao tiếp nối tiếp không đồng bộ. UART hoạt động ở dạng song công và chỉ cho 1 máy gửi kết nối với 1 máy nhận. Bao gồm 2 dây:
+- TX(Transmit): Chân truyền dữ liệu
+- RX(Receive): Chân nhận dữ liệu  
+Vì UART không có chân xung clock để đồng bộ dữ liệu giữa bên gửi và bên nhận, nên nó sẽ sử dụng timer để xác định khoảng thời gian giữa 2 bit được truyền/nhận. Bên gửi và bên nhận sẽ đồng nhất sau khoảng thời gian bao nhiêu thì bit tiếp theo sẽ được truyền/nhận. Khoảng thời gian này được tính sử dụng thông số là Baudrate.  
+
+Baudrate là thông số cho biết bao nhiêu bit được gửi đi trong vòng 1s (đơn vị: bps - bits per second). Nhờ vào số bit được truyền trong 1s, ta tam suất để tính được sau bao nhiêu giây thì bit tiếp theo sẽ được gửi. Từ đó, bên gửi và bên nhận sẽ chỉnh sửa timer của mình sao cho khớp với khoảng thời gian này để đồng bộ được dữ liệu với nhau.
+  
+Nguyên lý hoạt động:
+- Khi muốn truyền dữ liệu nào đó, bên gửi trước tiên sẽ tạo Start Condition bằng cách hạ đường TX từ mức 1 xuống mức 0 trong 1 khoảng thời gian đã đồng nhất ban đầu.
+- Sau đó, bên gửi và bên nhận sẽ khởi động timer, bên gửi sau khi timer tràn sẽ gửi 1 bit, bên nhận sau khi timer tràn sẽ nhận 1 bit. Quá trình này diễn ra tới khi bit dữ liệu cuối cùng được gửi.
+- Ngay sau khi các bit dữ liệu được gửi, có hoặc không 1 bit Parity được gửi. Bit Parity được dùng để kiểm tra lỗi trong các bit dữ liệu. Có 2 loại bit Parity là Parity chẵn (đảm bảo tổng số bit 1 trong các bit dữ liệu và bit Parity là số chẵn) và Parity lẻ (đảm bảo tổng số bit 1 trong các bit dữ liệu và bit Parity là số lẻ).
+- Sau khi hoàn thành gửi Parity bit, bên gửi sẽ tạo Stop Condition bằng cách kéo đường TX từ 0 lên mức 1 trong khoảng thời gian từ 1 đến 2 lần khoảng thời gian đã đồng nhất ban đầu.
