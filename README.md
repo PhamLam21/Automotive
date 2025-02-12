@@ -184,12 +184,13 @@ void delay_ms(uint16_t time) {
 - MISO (Master Input Slave output) : Master nhận dữ lieu từ Slave
 - MOSI (Master Output Slave input) : Master truyền dữ lieu cho Slave
 - SS (CS, NSS): Dây để xác định Slave cụ thể để giao tiếp -> để chọn Slave giao tiếp Master kéo xuống 0V, có bao nhiêu Slave thì có bây nhiêu day SS để nối với các Slave riêng biệt  
-  
+
 Nguyên lý hoạt động:
 - Master kéo chân SS của Slave tương ứng xuống 0 để bắt đầu quá trình giao tiếp
 - Master sẽ phát xung clock cứ mỗi chu kỳ clock sẽ là 1 bit Master truyền đi qua MOSI và nhận lại qua MISO
 - Sau khi nhận xong 1 bit thanh ghi nhận của Slave và Master sẽ cập nhật giá trị nhận vào và dịch bit để sẵn sàng nhận bit tiếp theo 
-- Lập lại quá trình đến khi truyền xong 8 bit trong thanh ghi  
+- Lập lại quá trình đến khi truyền xong 8 bit trong thanh ghi
+  
 SPI có 4 chế độ hoạt động phụ thuộc Clock Polarity – CPOL và Phase - CPHA:
 - CPOL quyết định cực tính (hình dạng) của xung clock.
     - CPOL = 0: khi không truyền/nhận, SCK sẽ ở mức 0. Khi muốn truyền/nhận thì Master sẽ kéo chân SCK lên mức 1 theo chu kỳ
