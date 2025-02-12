@@ -79,7 +79,7 @@ Cách ngắt thực hiện bên trong MCU:
 - Nếu đang thực thi trình phục vụ ngắt mà có 1 ngắt có độ ưu tiên cao hơn xảy ra thì hệ thống sẽ thực hiện lại bước lưu địa chỉ xong nhảy đến địa chỉ hàm ngắt có độ ưu tiên cao hơn  
 
 Ba loại ngắt thường dung có thể lập trình được: ngắt ngoài, ngắt timer, ngắt truyền thông (UART, SPI, I2C)  
-  
+
 **Ngắt ngoài**  
 Xảy ra khi có thay đổi điện áp trên các chân GPIO được cấu hình làm ngõ vào ngắt. Có 4 loại ngắt ngoài:  
 - LOW: kích hoạt ngắt liên tục khi chân ở mức thấp
@@ -184,6 +184,7 @@ void delay_ms(uint16_t time) {
 - MISO (Master Input Slave output) : Master nhận dữ lieu từ Slave
 - MOSI (Master Output Slave input) : Master truyền dữ lieu cho Slave
 - SS (CS, NSS): Dây để xác định Slave cụ thể để giao tiếp -> để chọn Slave giao tiếp Master kéo xuống 0V, có bao nhiêu Slave thì có bây nhiêu day SS để nối với các Slave riêng biệt  
+  
 Nguyên lý hoạt động:
 - Master kéo chân SS của Slave tương ứng xuống 0 để bắt đầu quá trình giao tiếp
 - Master sẽ phát xung clock cứ mỗi chu kỳ clock sẽ là 1 bit Master truyền đi qua MOSI và nhận lại qua MISO
@@ -191,16 +192,18 @@ Nguyên lý hoạt động:
 - Lập lại quá trình đến khi truyền xong 8 bit trong thanh ghi  
 SPI có 4 chế độ hoạt động phụ thuộc Clock Polarity – CPOL và Phase - CPHA:
 - CPOL quyết định cực tính (hình dạng) của xung clock.
-    - CPOL = 0: khi không truyền/nhận, SCK sẽ ở mức 0. Khi muốn truyền/nhận thì Master sẽ kéo chân SCK lên mức 1 theo chu kỳ.
-    - CPOL = 1: khi không truyền/nhận, SCK sẽ ở mức 1. Khi muốn truyền/nhận thì Master sẽ kéo chân SCK lên mức 0 theo chu kỳ (ngược lại với CPOL = 0).
-- CPHA quyết định pha của xung clock, nơi mà bit sẽ được truyền đi trong một chu kỳ xung clock.
-    - CPHA = 0: bit được truyền/nhận ở cạnh đầu tiên trong chu kỳ xung clock, VD khi CPOL = 0 thì cạnh đầu tiên là cạnh lên, CPOL = 1 là cạnh xuống.
-    - CPHA = 1: bit được truyền/nhận ở cạnh thứ hai trong chu kỳ xung clock.
+    - CPOL = 0: khi không truyền/nhận, SCK sẽ ở mức 0. Khi muốn truyền/nhận thì Master sẽ kéo chân SCK lên mức 1 theo chu kỳ
+    - CPOL = 1: khi không truyền/nhận, SCK sẽ ở mức 1. Khi muốn truyền/nhận thì Master sẽ kéo chân SCK lên mức 0 theo chu kỳ (ngược lại với CPOL = 0)
+- CPHA quyết định pha của xung clock, nơi mà bit sẽ được truyền đi trong một chu kỳ xung clock
+    - CPHA = 0: bit được truyền/nhận ở cạnh đầu tiên trong chu kỳ xung clock, VD khi CPOL = 0 thì cạnh đầu tiên là cạnh lên, CPOL = 1 là cạnh xuống
+    - CPHA = 1: bit được truyền/nhận ở cạnh thứ hai trong chu kỳ xung clock
 ### I2C  
 **I2C (Inter-Intergrated Circuit)** là chuẩn giao tiếp nối tiếp, đồng bộ. I2C hoạt động ở dạng bán song công và có thể cho phép 1 Master kết nối với nhiều Slave. Bao gồm 2 dây:
 - SPI (Serial Clock): Tạo xung tín hiệu để đồng bộ truyền/nhận dữ liệu với các Slave
 - SDA (Serial Data): Chân chứa dữ liệu được truyền đi  
-I2C hoạt động ở chế độ open-drain khi muốn điều khiển đường dây sẽ kéo xuống mức 0 đối với các trường hợp khác sẽ ở Floating (thả nổi) không có mức điện áp nào nên cần thiết kế 1 điện trở kéo lên để ở mức 1 nếu thiết bị không hỗ trợ.
+
+I2C hoạt động ở chế độ open-drain khi muốn điều khiển đường dây sẽ kéo xuống mức 0 đối với các trường hợp khác sẽ ở Floating (thả nổi) không có mức điện áp nào nên cần thiết kế 1 điện trở kéo lên để ở mức 1 nếu thiết bị không hỗ trợ  
+
 Nguyên lý hoạt động: 
 - Chuyền dữ liệu theo 1 khung (frame) cố định
 - Trước khi truyền dữ liệu để thông báo cho Slave -> kéo SDA xuống 0 rồi kéo SCL xuống 0 để thông báo
@@ -216,6 +219,7 @@ Nguyên lý hoạt động:
 **UART (Universal Asynchronous Receiver-Transmitter)** là một giao thức truyền thông phần cứng dùng giao tiếp nối tiếp không đồng bộ. UART hoạt động ở dạng song công và chỉ cho 1 máy gửi kết nối với 1 máy nhận. Bao gồm 2 dây:
 - TX(Transmit): Chân truyền dữ liệu
 - RX(Receive): Chân nhận dữ liệu  
+
 Vì UART không có chân xung clock để đồng bộ dữ liệu giữa bên gửi và bên nhận, nên nó sẽ sử dụng timer để xác định khoảng thời gian giữa 2 bit được truyền/nhận. Bên gửi và bên nhận sẽ đồng nhất sau khoảng thời gian bao nhiêu thì bit tiếp theo sẽ được truyền/nhận. Khoảng thời gian này được tính sử dụng thông số là Baudrate.  
 
 Baudrate là thông số cho biết bao nhiêu bit được gửi đi trong vòng 1s (đơn vị: bps - bits per second). Nhờ vào số bit được truyền trong 1s, ta tam suất để tính được sau bao nhiêu giây thì bit tiếp theo sẽ được gửi. Từ đó, bên gửi và bên nhận sẽ chỉnh sửa timer của mình sao cho khớp với khoảng thời gian này để đồng bộ được dữ liệu với nhau.
