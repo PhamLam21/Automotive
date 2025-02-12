@@ -74,9 +74,10 @@ void GPIO_Write(GPIO_TypeDef* GPIOx, uint16_t PortVal);                         
 **Ngắt** là một sự kiện xảy ra trong hoặc ngoài MCU yêu cầu MCU phải dừng chương trình và thực thi chương trình ngắt (ISR).  
 Mỗi loại ngắt trong MCU đều có một trình phục vụ riêng và mỗi một trình phục vụ ứng với một địa chỉ riêng trong hệ thống được gọi là vector ngắt.  
 Cách ngắt thực hiện bên trong MCU:
-- PC (Program counter): là con trỏ được chỉ tới địa chỉ lệnh đang được thực thi và luôn chỉ đến lệnh tiếp theo cũng là địa chỉ tiếp theo trong chương trình, khi xảy ra ngắt thì PC sẽ trỏ tới địa chỉ của hàm ngắt và hệ thống sẽ lưu địa chỉ trước đó vào MSP (main stack pointer) để khi thực hiện xong hàm ngắt thì sẽ lấy địa chỉ được lưu trong đó để quay lại thực thi tiếp chương trình đang dở.
-- MSP (main stack pointer): stack hoạt động dạng LIFO, trước khi nhảy tới địa chỉ hàm ngắt sẽ lưu lại địa chỉ trước đó vào MSC, cứ tiếp tục sau khi hoàn thành ngắt lấy phần tử đầu trong MSC để quay lại địa chỉ cũ để tiếp tục công việc.
-- Nếu đang thực thi trình phục vụ ngắt mà có 1 ngắt có độ ưu tiên cao hơn xảy ra thì hệ thống sẽ thực hiện lại bước lưu địa chỉ xong nhảy đến địa chỉ hàm ngắt có độ ưu tiên cao hơn.  
+- PC (Program counter): là con trỏ được chỉ tới địa chỉ lệnh đang được thực thi và luôn chỉ đến lệnh tiếp theo cũng là địa chỉ tiếp theo trong chương trình, khi xảy ra ngắt thì PC sẽ trỏ tới địa chỉ của hàm ngắt và hệ thống sẽ lưu địa chỉ trước đó vào MSP (main stack pointer) để khi thực hiện xong hàm ngắt thì sẽ lấy địa chỉ được lưu trong đó để quay lại thực thi tiếp chương trình đang dở
+- MSP (main stack pointer): stack hoạt động dạng LIFO, trước khi nhảy tới địa chỉ hàm ngắt sẽ lưu lại địa chỉ trước đó vào MSC, cứ tiếp tục sau khi hoàn thành ngắt lấy phần tử đầu trong MSC để quay lại địa chỉ cũ để tiếp tục công việc
+- Nếu đang thực thi trình phục vụ ngắt mà có 1 ngắt có độ ưu tiên cao hơn xảy ra thì hệ thống sẽ thực hiện lại bước lưu địa chỉ xong nhảy đến địa chỉ hàm ngắt có độ ưu tiên cao hơn  
+
 Ba loại ngắt thường dung có thể lập trình được: ngắt ngoài, ngắt timer, ngắt truyền thông (UART, SPI, I2C).  
 **Ngắt ngoài**  
 Xảy ra khi có thay đổi điện áp trên các chân GPIO được cấu hình làm ngõ vào ngắt. Có 4 loại ngắt ngoài:  
