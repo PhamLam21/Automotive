@@ -198,6 +198,61 @@ SPI có 4 chế độ hoạt động phụ thuộc Clock Polarity – CPOL và P
 - CPHA quyết định pha của xung clock, nơi mà bit sẽ được truyền đi trong một chu kỳ xung clock
     - CPHA = 0: bit được truyền/nhận ở cạnh đầu tiên trong chu kỳ xung clock, VD khi CPOL = 0 thì cạnh đầu tiên là cạnh lên, CPOL = 1 là cạnh xuống
     - CPHA = 1: bit được truyền/nhận ở cạnh thứ hai trong chu kỳ xung clock
+#### Software:
+- Xuất điện áp qua chân GPIO  
+- Xác định chân GPIO -> Cấu hình chân GPIO -> Khởi tạo các chân cho GPIO
+- Trước hết phải cấp clock cho các chân  
+#### Hardware:
+Để sử dụng được SPI Hardware do board đã tạo sẵn thì cần xem bảng SPI tương ứng với chân GPIO nào để cài các chân GPIO đó về chế độ AF  
+
+Tương tự các ngoại vi khác, các tham số SPI được cấu hình trong Struct SPI_InitTypeDef:  
+
+- SPI_Mode: Chế độ hoạt động của thiết bị SPI, bao gồm SPI_Mode_Master và SPI_Mode_Slave  
+- SPI_Direction: Kiểu truyền của thiết bị, bao gồm:  
+    ```  
+	SPI_Direction_2Lines_Fullduplex		// Song công
+	SPI_Direction_2Lines_RxOnly			// 2 dây nhưng chỉ nhận
+	SPI_Direction_1Line_Rx				// Sử dụng MOSI hoặc MISO chỉ để nhận
+	SPI_Direction_1Line_Tx				// Sử dụng MOSI hoặc MISO chỉ để truyền
+    ```  
+- SPI_BaudRatePrescaler: Hệ số chia clock cấp cho Module SPI. Thông số này chia clock nguồn trên bus tương ứng của SPI để cấp cho chân SCK hoạt động và có 8 giá trị từ 2 đến 256. Cú pháp: SPI_BaudRatePrescaler_<hệ số chia>
+- SPI_CPOL: Hệ số CPOL của thiết bị, bao gồm SPI_CPOL_Low và SPI_CPOL_High
+- SPI_CPHA: Hệ số CPHA của thiết bị, bao gồm SPI_CPHA_1Edge (CPHA = 0) và SPI_CPHA_2Edge (CPHA = 1)
+- SPI_DataSize: Số bit được truyền, bao gồm SPI_DataSize_8b hoặc SPI_DataSize_16b
+- SPI_FirstBit: Bit đầu tiên được truyền, baoo gồm SPI_FirstBit_MSB và SPI_FirstBit_LSB
+- SPI_CRCPolynomial: Đặt giá trị đa thức kiểm tra chu kỳ tuần hoàn cho việc tính toán CRC, Master và Slave phải sử dụng chung 1 giá trị SPI_CRCPolynomial. Sử dụng hàm SPI_CalculateCRC(SPI1, ENABLE) để bật tính năng tính CRC
+- SPI_NSS: Cấu hình chân SS là điều khiển bằng thiết bị hay phần mềm, bao gồm SPI_NSS_Soft và SPI_NSS_Hard  
+
+Để ghi các giá trị đã cấu hình vào các thanh ghi của SPI thì ta sử dụng hàm SPI_Init với 2 tham số:
+
+- Tham số đầu là kênh SPI ta sử dụng. STM32F103C8 có 3 bộ SPI, SPI1 nằm trên bus APB2, 2 bộ còn lại nằm trên APB1.
+- Tham số thứ hai là con trỏ đến struct "SPI_InitTypeDef" đã cài đặt ở trên.
+- Sau khi đã hoàn thành cấu hình cho SPI thì ta phải cho phép SPI hoạt động bằng hàm SPI_Cmd với 2 tham số:
+
+Tham số đầu tiên: kênh SPI mà ta sử dụng.
+Tham thứ hai: có cho phép ngoại vi này hoạt động hay không. Có là ENABLE, không là DISABLE.
+```  
+	SPI_InitTypeDef SPI_InitStructure;
+
+	SPI_InitStructure.SPI_Mode = SPI_Mode_Master;
+	SPI_InitStructure.SPI_Direction = SPI_Direction_2Lines_FullDuplex;
+	SPI_InitStructure.SPI_BaudRatePrescaler = SPI_BaudRatePrescaler_16;
+	SPI_InitStructure.SPI_CPOL = SPI_CPOL_Low;
+	SPI_InitStructure.SPI_CPHA = SPI_CPHA_1Edge;
+	SPI_InitStructure.SPI_DataSize = SPI_DataSize_8b;
+	SPI_InitStructure.SPI_FirstBit = SPI_FirstBit_MSB;
+	SPI_InitStructure.SPI_CRCPolynomial = 7;
+	SPI_InitStructure.SPI_NSS = SPI_NSS_Soft;
+
+	SPI_Init(SPI1, &SPI_InitStructure);
+	SPI_Cmd(SPI1, ENABLE);
+```  
+Sử dụng SPI:  
+``` 
+SPI_I2S_SendData(SPI_TypeDef* SPIx, uint16_t Data); //Tùy vao cấu hình truyền 8 hay 16 bit 
+SPI_I2S_ReceiveData(SPI_TypeDef* SPIx); // trả về giá trị đọc được 
+SPI_I2S_GetFlagStatus(SPI_TypeDef* SPIx, uint16_t SPI_I2S_FLAG); //trả về giá trị 1 cờ trong thanh ghi của SPI: cờ báo bộ đệm truyền đang trông SPI_I2S_FLAG_TXE = SET, Báo bộ nhận có dữ liệu SPI_I2S_FLAG_RXNE = SET, bận SPI_I2S_FLAG_BSY
+```  
 ### I2C  
 **I2C (Inter-Intergrated Circuit)** là chuẩn giao tiếp nối tiếp, đồng bộ. I2C hoạt động ở dạng bán song công và có thể cho phép 1 Master kết nối với nhiều Slave. Bao gồm 2 dây:
 - SPI (Serial Clock): Tạo xung tín hiệu để đồng bộ truyền/nhận dữ liệu với các Slave
