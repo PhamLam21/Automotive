@@ -18,8 +18,14 @@ void RCC_config() {
 void GPIO_config() {
 	GPIO_InitTypeDef GPIO_init;
 	
-	GPIO_init.GPIO_Pin = SPI1_NSS | SPI1_SCK | SPI1_MISO | SPI1_MOSI;
+	GPIO_init.GPIO_Pin = SPI1_SCK | SPI1_MISO | SPI1_MOSI;
 	GPIO_init.GPIO_Mode = GPIO_Mode_AF_PP;
+	GPIO_init.GPIO_Speed = GPIO_Speed_50MHz;
+	
+	GPIO_Init(SPI_Pin, &GPIO_init);
+	
+	GPIO_init.GPIO_Pin = SPI1_NSS;
+	GPIO_init.GPIO_Mode = GPIO_Mode_IPU;
 	GPIO_init.GPIO_Speed = GPIO_Speed_50MHz;
 	
 	GPIO_Init(SPI_Pin, &GPIO_init);
@@ -56,22 +62,29 @@ void delay_ms(uint32_t time){
 	while(TIM_GetCounter(TIM2) < time){}
 }
 
-uint8_t SPI_Receive1Byte(void){
-		while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET){}
-		uint8_t temp = (uint8_t)SPI_I2S_ReceiveData(SPI1);
+uint8_t SPI_SendReceiveByte(uint8_t dataSend){
+		while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET) {}
+    SPI_I2S_SendData(SPI1, dataSend); // G?i d? li?u tru?c
+		while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET) {} // Ð?i SPI hoàn thành truy?n
+			
+    uint8_t temp = (uint8_t)SPI_I2S_ReceiveData(SPI1);
     while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE) == RESET){}
     return temp;
 }
+
+uint8_t dataSend[] = {1, 2, 3, 4, 5, 6, 7};
 uint8_t data;
 int main() {
 	RCC_config();
 	GPIO_config();
 	TIM_config();
 	SPI_config();
+	uint8_t index = 0;
 	while(1) {
 		while(GPIO_ReadInputDataBit(GPIOA, SPI1_NSS) == 1){}
 		if(GPIO_ReadInputDataBit(GPIOA, SPI1_NSS) == 0){
-			data = SPI_Receive1Byte();
-		}
+			data = SPI_SendReceiveByte(dataSend[index]);
+      index = (index + 1) % 7;
+    }
 	}
 }

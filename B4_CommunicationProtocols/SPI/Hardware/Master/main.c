@@ -19,11 +19,15 @@ void RCC_Config(){
 void GPIO_Config(){
 	GPIO_InitTypeDef GPIO_InitStructure;
 	
-	GPIO_InitStructure.GPIO_Pin = SPI1_NSS | SPI1_SCK | SPI1_MISO| SPI1_MOSI;
+	GPIO_InitStructure.GPIO_Pin = SPI1_SCK | SPI1_MISO| SPI1_MOSI;
 	GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
 	GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
-	
 	GPIO_Init(SPI1_GPIO, &GPIO_InitStructure);
+	
+	GPIO_InitStructure.GPIO_Pin = SPI1_NSS;
+  GPIO_InitStructure.GPIO_Mode = GPIO_Mode_Out_PP; 
+  GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+  GPIO_Init(SPI1_GPIO, &GPIO_InitStructure);
 }
 
 void TIM_Config(){
@@ -60,23 +64,34 @@ void delay_ms(uint32_t time){
 	while(TIM_GetCounter(TIM2) < time){}
 }
 
-void SPI_Send1Byte(uint8_t data){
-		GPIO_ResetBits(GPIOA, SPI1_NSS);
-		while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET){}
-    SPI_I2S_SendData(SPI1, (uint16_t)data);
-    while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET){}
-		GPIO_SetBits(GPIOA, SPI1_NSS);
+uint8_t SPI_SendReceiveByte(uint8_t data){
+    GPIO_ResetBits(GPIOA, SPI1_NSS); // Ch?n Slave (NSS xu?ng m?c th?p)
+    
+    while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_TXE) == RESET) {} // Ch? TX s?n sàng
+    SPI_I2S_SendData(SPI1, data); // G?i d? li?u
+    while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_BSY) == SET) {} // Ð?i SPI hoàn thành truy?n
+    
+    uint8_t received = SPI_I2S_ReceiveData(SPI1);
+		while(SPI_I2S_GetFlagStatus(SPI1, SPI_I2S_FLAG_RXNE) == RESET) {} // Ch? RX có d? li?u
+			
+    GPIO_SetBits(GPIOA, SPI1_NSS); // B? ch?n Slave (NSS lên m?c cao)
+    
+    return received;
 }
 
-uint8_t dataSend[] = {3, 1, 10, 19, 20, 36, 90};
-int main(){
+
+
+uint8_t dataSend[] = {0, 1, 2, 3, 4, 5, 6};
+uint8_t dataRev;
+int main(){	
 	RCC_Config();
 	GPIO_Config();
 	TIM_Config();
 	SPI_Config();
+	
 	while(1){
 		for(int i = 0; i < 7; i++){
-			SPI_Send1Byte(dataSend[i]);
+			dataRev = SPI_SendReceiveByte(dataSend[i]);
 			delay_ms(1000);
 		}
 	}

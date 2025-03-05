@@ -270,7 +270,40 @@ Nguyên lý hoạt động:
 - Khi Master gửi xong 8 bit trong khung dữ liệu, nó sẽ cho chạy timer 1 khoảng thời gian nhỏ, nếu không có Slave nào kéo chân SDA xuống mức 0 (chưa có ACK) khi timer chưa tràn thì Master sẽ hiểu là dữ liệu đã gửi không thành công (hoặc là không có Slave nào có địa chỉ tương ứng mà Master đã gửi).
 - Sau khi Master phát hiện ACK từ Slave, nó sẽ tiến hành truyền/nhận khung dữ liệu 8 bit đầu tiên (MSB gửi trước, LSB gửi sau) tuỳ vào bit R/W ở khung dữ liệu đầu tiên. Sau đó, bên nhận sẽ gửi bit ACK.
 - Sau khi đã phát hiện ACK thì sẽ tiếp tục truyền các khung dữ liệu cho tới khi hết dữ liệu.
-- Khi muốn kết thúc quá trình truyền/nhận dữ liệu nào đó, Master sẽ tạo Stop Condition bằng cách thả đường SCL trước thả đường SDA lên mức 1.
+- Khi muốn kết thúc quá trình truyền/nhận dữ liệu nào đó, Master sẽ tạo Stop Condition bằng cách thả đường SCL trước thả đường SDA lên mức 1.  
+
+#### Hardware
+- Khởi tạo: I2C_InitTypeDef  
+```  
+I2C_InitTypeDef I2C_InitStruct;
+	
+	I2C_InitStruct.I2C_Mode = I2C_Mode_I2C;
+	I2C_InitStruct.I2C_ClockSpeed = 400000;
+	I2C_InitStruct.I2C_DutyCycle = I2C_DutyCycle_2;
+	I2C_InitStruct.I2C_OwnAddress1 = 0x00;
+	I2C_InitStruct.I2C_AcknowledgedAddress = I2C_AcknowledgedAddress_7bit;
+	I2C_InitStruct.I2C_Ack = I2C_Ack_Enable;
+	
+	I2C_Init(I2C1, &I2C_InitStruct);
+	I2C_Cmd(I2C1, ENABLE);
+```  
+    - I2C_Mode: Cấu hình chế độ hoạt động cho I2C
+        - I2C_Mode_I2C: Chế độ I2C FM(fast mode)  
+        - I2C_Mode_SMBusDevice&I2C_Mode_SMBusHost: Chế độ SM(Slow mode)
+    - I2C_ClockSpeed: Cấu hình clock I2C, tối đa 100khz với SM và 400khz ở FM
+    - I2C_DutyCycle: Cấu hình chu kì nhiệm vụ của xung:
+        - I2C_DutyCycle_2: Thời gian xung thấp/ xung cao = 2;
+    - I2C_OwnAddress1: Địa chỉ của thiết bị 0x00 là master -> các slave đặt cho không trùng
+    - I2C_AcknowledgedAddress: 
+        - I2C_AcknowledgedAddress_7bit: Địa chỉ 7 bit
+        - I2C_AcknowledgedAddress_10bit: Địa chỉ 10 bit
+    - I2C_Ack: Cho phép trả về ACK hay không  
+- Sử dụng:  
+    - I2C_Send7bitAddress(): Chuyền địa chỉ xác định slave 
+    - I2C_SendDate(): Gửi dữ liệu  
+    - I2C_ReceiveData(): Nhận dữ liệu
+    - I2C_AcknowledgeConfig(): Kích hoạt việc master có gửi ACK hay không
+    - I2C_CheckEvent(): Trả về kết quả kiểm tra event tương ứng  
 ### UART
 **UART (Universal Asynchronous Receiver-Transmitter)** là một giao thức truyền thông phần cứng dùng giao tiếp nối tiếp không đồng bộ. UART hoạt động ở dạng song công và chỉ cho 1 máy gửi kết nối với 1 máy nhận. Bao gồm 2 dây:
 - TX(Transmit): Chân truyền dữ liệu
@@ -284,4 +317,47 @@ Nguyên lý hoạt động:
 - Khi muốn truyền dữ liệu nào đó, bên gửi trước tiên sẽ tạo Start Condition bằng cách hạ đường TX từ mức 1 xuống mức 0 trong 1 khoảng thời gian đã đồng nhất ban đầu.
 - Sau đó, bên gửi và bên nhận sẽ khởi động timer, bên gửi sau khi timer tràn sẽ gửi 1 bit, bên nhận sau khi timer tràn sẽ nhận 1 bit. Quá trình này diễn ra tới khi bit dữ liệu cuối cùng được gửi.
 - Ngay sau khi các bit dữ liệu được gửi, có hoặc không 1 bit Parity được gửi. Bit Parity được dùng để kiểm tra lỗi trong các bit dữ liệu. Có 2 loại bit Parity là Parity chẵn (đảm bảo tổng số bit 1 trong các bit dữ liệu và bit Parity là số chẵn) và Parity lẻ (đảm bảo tổng số bit 1 trong các bit dữ liệu và bit Parity là số lẻ).
-- Sau khi hoàn thành gửi Parity bit, bên gửi sẽ tạo Stop Condition bằng cách kéo đường TX từ 0 lên mức 1 trong khoảng thời gian từ 1 đến 2 lần khoảng thời gian đã đồng nhất ban đầu.
+- Sau khi hoàn thành gửi Parity bit, bên gửi sẽ tạo Stop Condition bằng cách kéo đường TX từ 0 lên mức 1 trong khoảng thời gian từ 1 đến 2 lần khoảng thời gian đã đồng nhất ban đầu.  
+## ADC  
+- Tín hiệu tương tự là một loại tín hiệu mà giá trị của nó biến đổi liên tục theo thời gian và có thể có vô hạn mức giá trị khác nhau trong một khoảng thời gian cụ thể  
+- So sánh điện áp lúc đó với giải điện áp -> dải nhị phân tương ứng
+- Độ phân dải: Số bit mà ADC dùng để xác định số lượng mức sẽ chia từ phạm vi điện áp tương tự, độ phân giải càng cao -> càng nhiều mức -> kết quả các chính xác  
+- Tần số lấy mẫu: Quy định tần suất mà tín hiệu tương tự được lấy mẫu -> tần số càng cao -> lấy được càng nhiều mẫu -> Kết quả càng chính xác  
+- STM32F103C8 có 2 bộ ADC, kết quả chuyển đổi được lưu trữ trong thanh ghi 16bit
+    - Độ phân giải 12 bit
+    - Có các ngắt hỗ trợ
+    - Có thể điều khiển hoạt động ADC bằng xung Trigger
+    - Thời gian chuyển đổi nhanh: 1us tại tần số 65Mhz
+    - Có bộ DMA giúp tăng tốc độ xử lý  
+- Regular Inversion:
+    - Single: Khi được yêu cầu chuyển đổi, chỉ 1 kênh được hoạt động và đọc dữ liệu chuyển đổi 1 lần
+    - Single Continuous: Khi được yêu cầu chuyển đổi, chỉ 1 kênh được hoạt động và đọc dữ liệu chuyển đổi liên tục
+    - Scan: Khi được yêu cầu chuyển đổi, quét qua nhiều kênh và đọc dữ liệu chuyển đổi 1 lần
+    - Scan Continuous: Khi được yêu cầu chuyển đổi, quét qua nhiều kênh và đọc dữ liệu chuyển đổi liên tục
+- Injected Inversion: Trong trường hợp nhiều kênh hoạt động, kênh có mức độ ưu tiên cao hơn có thể tạo ra một Injected Trigger. Khi gặp Injected Trigger, nếu kênh đang hoạt động có độ ưu tiên thấp hơn thì sẽ bị ngưng lại để kênh được ưu tiên kia có thể hoạt động.  
+```  
+void GPIO_Config() {
+    GPIO_InitTypeDef GPIO_InitStruct;
+    GPIO_InitStruct.GPIO_Mode = GPIO_Mode_AIN;
+    GPIO_InitStruct.GPIO_Pin = GPIO_Pin_0;
+    GPIO_InitStruct.GPIO_Speed = GPIO_Speed_50MHz;
+
+    GPIO_Init(GPIOA, &GPIO_InitStruct);
+}
+```  
+```  
+void ADC_Config() {
+    ADC_InitTypeDef ADC_InitStruct;
+    ADC_InitStruct.ADC_Mode = ADC_Mode_Independent;
+    ADC_InitStruct.ADC_NbrOfChannel = 1;
+    ADC_InitStruct.ADC_ScanConvMode = DISABLE;
+    ADC_InitStruct.ADC_ExternalTrigConv = ADC_ExternalTrigConv_None;
+    ADC_InitStruct.ADC_ContinuousConvMode = ENABLE;
+    ADC_InitStruct.ADC_DataAlign = ADC_DataAlign_Right;
+
+    ADC_Init(ADC1, &ADC_InitStruct);
+    ADC_RegularChannelConfig(ADC1, ADC_Channel_0, 1, ADC_SampleTime_28Cycles5);
+    ADC_cmd(ADC1, ENABLE);
+    ADC_SoftwareStartConvCmd(ADC1, ENABLE);
+}
+```  
